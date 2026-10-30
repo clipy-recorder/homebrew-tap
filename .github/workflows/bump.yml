@@ -1,0 +1,55 @@
+name: Bump clipy-recorder
+
+on:
+  schedule:
+    - cron: "41 */6 * * *"
+  workflow_dispatch:
+  repository_dispatch:
+    types: [clipy-desktop-release]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: bump-clipy-recorder
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update version and sha256 from the releases API
+        id: update
+        env:
+          # Empty on schedule and manual runs; set by the release dispatch.
+          WANT_VERSION: ${{ github.event.client_payload.version }}
+        run: |
+          set -euo pipefail
+          OUT="$(bash scripts/update-cask.sh Casks/clipy-recorder.rb "$WANT_VERSION")"
+          echo "$OUT"
+          echo "result=$OUT" >> "$GITHUB_OUTPUT"
+      - name: Verify the new DMGs match the API sha256
+        if: startsWith(steps.update.outputs.result, 'updated')
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/clipy-recorder.rb)"
+          ARM="$(sed -n 's/^  sha256 arm:   "\(.*\)",$/\1/p' Casks/clipy-recorder.rb)"
+          INTEL="$(sed -n 's/^         intel: "\(.*\)"$/\1/p' Casks/clipy-recorder.rb)"
+          BASE="https://cdn.clipy.online/desktop/stable/$VERSION"
+          echo "$ARM  arm.dmg" > sums
+          echo "$INTEL  intel.dmg" >> sums
+          curl -fsSL -o arm.dmg "$BASE/Clipy_aarch64.dmg"
+          curl -fsSL -o intel.dmg "$BASE/Clipy_x86_64.dmg"
+          sha256sum -c sums
+          rm -f arm.dmg intel.dmg sums
+      - name: Commit
+        if: startsWith(steps.update.outputs.result, 'updated')
+        run: |
+          set -euo pipefail
+          VERSION="$(sed -n 's/^  version "\(.*\)"$/\1/p' Casks/clipy-recorder.rb)"
+          git config user.name "clipy-release-bot"
+          git config user.email "support@clipy.online"
+          git add Casks/clipy-recorder.rb
+          git commit -m "clipy-recorder $VERSION"
+          git push
