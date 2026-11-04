@@ -1,9 +1,9 @@
 cask "clipy-recorder" do
   arch arm: "aarch64", intel: "x86_64"
 
-  version "1.1.75"
-  sha256 arm:   "12f9da7d385a7148559e8adca952d2ee0d840490e6903ac55b9b9cf170c973b8",
-         intel: "b695202fd835c9b736ec80925a35efb9312f37a5f5a06dc5b33dddc2326dfb2c"
+  version "1.1.82"
+  sha256 arm:   "6b5096acd6f100fa33477b337294985a8255e252807e563cff45b7ff8842278e",
+         intel: "dd8b3774a546028cc7867c3a0de376b4844a527f9465d4000f90c1ea7d5ba4d4"
 
   url "https://cdn.clipy.online/desktop/stable/#{version}/Clipy_#{arch}.dmg"
   name "Clipy"
